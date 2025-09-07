@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
 internal class Program
 {
@@ -52,7 +51,7 @@ internal class Program
         PerformanceMonitor.Init();
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         Random rand = new();
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             while (true)
             {
@@ -69,7 +68,7 @@ internal class Program
                 if (PerformanceMonitor.CpuUsage > 25) Thread.Sleep(100);
             }
         });
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             while (true)
             {
@@ -193,7 +192,7 @@ internal class Program
                 if (PerformanceMonitor.CpuUsage > 25) Thread.Sleep(100);
             }
         });
-        Task.Run(() =>
+        _ = Task.Run(() =>
         {
             while (true)
             {
@@ -578,7 +577,13 @@ internal class Program
     }
     static void BogoSort()
     {
-
+        Random shuffler = new();
+        TrackedTempArray<int> sortedArr = new(array.Raw);
+        Array.Sort(sortedArr.Raw);
+        while (array.Raw == sortedArr.Raw)
+        {
+            shuffler.Shuffle<int>(array.Raw);
+        }
     }
     static void StalinSort()
     {
@@ -644,9 +649,8 @@ internal class Program
         private static PerformanceCounter _ramUsage = new("Memory", "Available MBytes");
         public static void Init()
         {
-            float val;
-            val = _cpuUsage.NextValue();
-            val = _ramUsage.NextValue();
+            _ = _cpuUsage.NextValue();
+            _ = _ramUsage.NextValue();
         }
         public static float CpuUsage => _cpuUsage.NextValue();
         public static float RamUsage => _ramUsage.NextValue();
