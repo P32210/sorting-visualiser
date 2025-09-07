@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
+using System.Collections.Generic;
+using System.Diagnostics;
 internal class Program
 {
     static int height = 10;
@@ -17,10 +19,15 @@ internal class Program
         "Merge sort",
         "Heap sort",
         "Stooge sort",
-        "Circle sort"
+        "Circle sort",
+        "Gnome sort",
+        "Shell sort",
+        "Comb sort",
+        "Bogo sort",
+        "Stalin sort",
+        "Communism sort",
         ];
-    static byte[] array = new byte[width];
-    static int current;
+    static readonly TrackedArray<int> array = new(width);
     static int window = 0;
     static int window2 = 0;
     static readonly int start = Console.CursorTop;
@@ -29,14 +36,38 @@ internal class Program
     static bool freeze = false;
     static bool ready = false;
     static string message = "";
+    static long arrayAccesses = 0;
+    static long tempArrayAccesses = 0;
+    static bool countTempArrayAccesses = false;
+    static long comparisons = 0;
+    static long tempArrayComparisons = 0;
+    static bool countTempArrayComparisons = false;
+    static long iterations = 0;
+    static readonly Stopwatch time = new();
+    static long Elapsed => (long)time.Elapsed.TotalMilliseconds;
+    static long ElapsedAdjusted => (long)(iterations * delay / 400000) + (Elapsed - (long)(iterations * previousDelay / 400000));
+    static int previousDelay = 0;
     static async Task Main()
     {
+        PerformanceMonitor.Init();
         Console.OutputEncoding = System.Text.Encoding.UTF8;
         Random rand = new();
         Task.Run(() =>
         {
             while (true)
-                Console.Title = $"[</>] Algorithm: {algorithmName[algorithm]} | [+/-] Delay: {delay} | [\u2190/\u2192] Bar count: {width} | [\u2191/\u2193] Bar height: {height} | [R] Reset | {message}";
+            {
+                Console.Title = $"[</>] Algorithm: {algorithmName[algorithm]} | " +
+                $"[+/-] Delay: {delay} | " +
+                $"[\u2190/\u2192] Count: {width} | " +
+                $"[\u2191/\u2193] Ceiling: {height} | " +
+                $"[R] Reset | " +
+                $"Array accesses: {arrayAccesses}{(countTempArrayAccesses ? $" + {tempArrayAccesses}" : "")}, " +
+                $"Comps: {comparisons}{(countTempArrayComparisons ? $" + {tempArrayComparisons}" : "")} [A] | " +
+                $"Iters: {iterations} | " +
+                $"Elapsed real: {Elapsed}ms, adjusted: ~{Math.Max(ElapsedAdjusted, 0)}ms | " +
+                $"{message}";
+                if (PerformanceMonitor.CpuUsage > 25) Thread.Sleep(100);
+            }
         });
         Task.Run(() =>
         {
@@ -53,34 +84,44 @@ internal class Program
                         break;
                     case ConsoleKey.RightArrow:
                         width++;
-                        Array.Resize(ref array, width);
+                        array.Resize(width);
                         break;
                     case ConsoleKey.LeftArrow:
                         if (width == 1) width = 1;
                         else
                         {
                             width--;
-                            Array.Resize(ref array, width);
+                            array.Resize(width);
                         }
                         break;
                     case ConsoleKey.OemPeriod:
-                        if (algorithm == 9) algorithm = 0;
+                        if (algorithm == 15) algorithm = 0;
                         else algorithm++;
+                        while (!sorted) Thread.Sleep(5);
+                        sorted = true;
                         break;
                     case ConsoleKey.OemComma:
-                        if (algorithm == 0) algorithm = 9;
+                        if (algorithm == 0) algorithm = 15;
                         else algorithm--;
+                        while (!sorted) Thread.Sleep(5);
+                        sorted = true;
                         break;
                     case ConsoleKey.R:
                         ready = false;
-                        while (!sorted) ;
+                        while (!sorted) Thread.Sleep(100);
                         for (int i = 0; i < array.Length; i++)
                         {
                             array[i] = (byte)rand.Next(1, height);
                             Delay();
                         }
+                        arrayAccesses = 0;
+                        tempArrayAccesses = 0;
+                        comparisons = 0;
+                        tempArrayComparisons = 0;
+                        iterations = 0;
                         window = 0;
                         window2 = array.Length - 1;
+                        previousDelay = delay;
                         sorted = false;
                         ready = true;
                         break;
@@ -89,7 +130,8 @@ internal class Program
                         break;
                     case ConsoleKey.OemMinus:
                         if (delay <= 0) delay = 0;
-                        else delay -= 10000;
+                        else
+                            delay -= 10000;
                         break;
                     case ConsoleKey.F:
                         freeze = !freeze;
@@ -115,6 +157,7 @@ internal class Program
                                 case ConsoleKey.RightArrow:
                                     if (int.TryParse(input, out width)) message = "";
                                     else message = "Invalid input";
+                                    array.Resize(width);
                                     break;
                                 case ConsoleKey.LeftArrow:
                                     if (int.TryParse(input, out width)) message = "";
@@ -139,35 +182,50 @@ internal class Program
                                     mode = true;
                                     break;
                             }
-                            
+
                         }
-                    break;
+                        break;
+                    case ConsoleKey.A:
+                        countTempArrayAccesses = !countTempArrayAccesses;
+                        countTempArrayComparisons = !countTempArrayComparisons;
+                        break;
                 }
+                if (PerformanceMonitor.CpuUsage > 25) Thread.Sleep(100);
             }
         });
         Task.Run(() =>
         {
             while (true)
             {
-                if (freeze || !ready) continue;
+                while (freeze || !ready || sorted) Thread.Sleep(100);
+                time.Reset();
+                time.Start();
                 switch (algorithm)
                 {
                     case 0: BubbleSort(); break;
-                    case 1: QuickSort(array, 0, array.Length - 1); break;
+                    case 1: QuickSort(0, array.Length - 1); break;
                     case 2: CocktailShaker(); break;
-                    case 3: if (!sorted) RadixSort(); break;
+                    case 3: RadixSort(); break;
                     case 4: InsertionSort(); break;
                     case 5: SelectionSort(); break;
                     case 6: MergeSort(0, array.Length - 1); break;
-                    case 7: if (!sorted) HeapSort(); break;
+                    case 7: HeapSort(); break;
                     case 8: StoogeSort(0, array.Length - 1); break;
                     case 9: CircleSort(); break;
+                    case 10: GnomeSort(); break;
+                    case 11: ShellSort(); break;
+                    case 12: CombSort(); break;
+                    case 13: BogoSort(); break;
+                    case 14: StalinSort(); break;
+                    case 15: CommunismSort(); break;
                 }
+                time.Stop();
                 sorted = true;
             }
         });
         while (true)
         {
+            // while (sorted && ready) Thread.Sleep(1);
             Console.SetCursorPosition(0, start);
             Draw();
             Console.CursorVisible = false;
@@ -177,51 +235,59 @@ internal class Program
     {
         for (int i = 0; i < array.Length; i++)
         {
-            for (current = array.Length - 1; current > window; current--)
+            for (int j = array.Length - 1; j > i; j--)
             {
-                if (array[current - 1] > array[current]) (array[current], array[current - 1]) = (array[current - 1], array[current]);
+                comparisons++;
+                if (array[j - 1] > array[j])
+                    (array[j], array[j - 1]) = (array[j - 1], array[j]);
                 if (algorithm == 0 && ready) Delay();
                 else return;
             }
-            if (++window == array.Length - 1) window = 0;
         }
-
     }
     static void CocktailShaker()
     {
         for (int i = 0; i < array.Length; i++)
         {
-            for (current = window2; current > window; current--)
+            for (int j = window2; j > window; j--)
             {
-                if (array[current - 1] > array[current]) (array[current], array[current - 1]) = (array[current - 1], array[current]);
+                comparisons++;
+                if (array[j - 1] > array[j]) (array[j], array[j - 1]) = (array[j - 1], array[j]);
                 if (algorithm == 2 && ready) Delay();
                 else return;
             }
-            for (current = ++window; current < window2; current++)
+            for (int j = ++window; j < window2; j++)
             {
-                if (array[current - 1] > array[current]) (array[current], array[current - 1]) = (array[current - 1], array[current]);
+                comparisons++;
+                if (array[j - 1] > array[j]) (array[j], array[j - 1]) = (array[j - 1], array[j]);
                 if (algorithm == 2 && ready) Delay();
                 else return;
             }
             if (window >= array.Length - 1) window = 0;
             if (--window2 <= 0) window2 = array.Length - 1;
         }
-        
+
     }
-    static void QuickSort(byte[] input, int leftIndex, int rightIndex)
+    static void QuickSort(int leftIndex, int rightIndex)
     {
         var i = leftIndex;
         var j = rightIndex;
-        var pivot = input[leftIndex];
+        var pivot = array[leftIndex];
         while (i <= j)
         {
-            while (input[i] < pivot)
+            while (array[i] < pivot)
+            {
                 i++;
-            while (input[j] > pivot)
+                comparisons++;
+            }
+            while (array[j] > pivot)
+            {
                 j--;
+                comparisons++;
+            }
             if (i <= j)
             {
-                (input[j], input[i]) = (input[i], input[j]);
+                (array[j], array[i]) = (array[i], array[j]);
                 i++;
                 j--;
             }
@@ -229,19 +295,19 @@ internal class Program
             else return;
         }
         if (leftIndex < j)
-            QuickSort(input, leftIndex, j);
+            QuickSort(leftIndex, j);
         if (i < rightIndex)
-            QuickSort(input, i, rightIndex);
-        
+            QuickSort(i, rightIndex);
+
     }
     static void RadixSort()
     {
-        static void CountingSort(byte[] input, int size, int exponent)
+        static void CountingSort(int size, int exponent)
         {
             if (algorithm == 3 && ready) Delay();
             else return;
-            var outputArr = (byte[])input.Clone();
-            var occurences = new int[10];
+            TrackedTempArray<int> outputArr = new((int[])array.Raw.Clone());
+            TrackedTempArray<int> occurences = new(10);
             for (int i = 0; i < 10; i++)
                 occurences[i] = 0;
             for (int i = 0; i < size; i++)
@@ -252,16 +318,19 @@ internal class Program
             {
                 if (algorithm == 3 && ready) Delay();
                 else return;
-                input[occurences[(outputArr[i] / exponent) % 10] - 1] = outputArr[i];
+                array[occurences[(outputArr[i] / exponent) % 10] - 1] = outputArr[i];
                 occurences[(outputArr[i] / exponent) % 10]--;
             }
         }
         var max = array[0];
         for (int i = 1; i < array.Length; i++)
             if (array[i] > max)
+            {
                 max = array[i];
+                comparisons++;
+            }
         for (int exponent = 1; max / exponent > 0; exponent *= 10)
-            CountingSort(array, array.Length, exponent);
+            CountingSort(array.Length, exponent);
 
     }
     static void InsertionSort()
@@ -279,6 +348,7 @@ internal class Program
                     array[j + 1] = key;
                 }
                 else flag = 1;
+                comparisons++;
                 if (algorithm == 4 && ready) Delay();
                 else return;
             }
@@ -289,8 +359,8 @@ internal class Program
     {
         var leftArrayLength = middle - left + 1;
         var rightArrayLength = right - middle;
-        var leftTempArray = new byte[leftArrayLength];
-        var rightTempArray = new byte[rightArrayLength];
+        TrackedTempArray<int> leftTempArray = new(leftArrayLength);
+        TrackedTempArray<int> rightTempArray = new(rightArrayLength);
         int i, j;
         for (i = 0; i < leftArrayLength; ++i)
             leftTempArray[i] = array[left + i];
@@ -302,13 +372,10 @@ internal class Program
         while (i < leftArrayLength && j < rightArrayLength)
         {
             if (leftTempArray[i] <= rightTempArray[j])
-            {
                 array[k++] = leftTempArray[i++];
-            }
             else
-            {
                 array[k++] = rightTempArray[j++];
-            }
+            tempArrayComparisons++;
             if (algorithm == 6 && ready) Delay();
             else return;
         }
@@ -332,7 +399,7 @@ internal class Program
             MergeSort(middle + 1, right);
             MergeArray(left, middle, right);
         }
-        
+
     }
     static void SelectionSort()
     {
@@ -346,26 +413,28 @@ internal class Program
                 {
                     min = j;
                 }
+                comparisons++;
                 if (algorithm == 5 && ready) Delay();
                 else return;
             }
             (array[i], array[min]) = (array[min], array[i]);
         }
-        
+
     }
-    static void Heapify(byte[] input, int size, int index)
+    static void Heapify(int size, int index)
     {
         var largestIndex = index;
         var leftChild = 2 * index + 1;
         var rightChild = 2 * index + 2;
-        if (leftChild < size && input[leftChild] > input[largestIndex])
+        if (leftChild < size && array[leftChild] > array[largestIndex])
             largestIndex = leftChild;
-        if (rightChild < size && input[rightChild] > input[largestIndex])
+        if (rightChild < size && array[rightChild] > array[largestIndex])
             largestIndex = rightChild;
+        comparisons += 2;
         if (largestIndex != index)
         {
-            (input[largestIndex], input[index]) = (input[index], input[largestIndex]);
-            Heapify(input, size, largestIndex);
+            (array[largestIndex], array[index]) = (array[index], array[largestIndex]);
+            Heapify(size, largestIndex);
         }
     }
     static void HeapSort()
@@ -375,24 +444,25 @@ internal class Program
             return;
         for (int i = size / 2 - 1; i >= 0; i--)
         {
-            Heapify(array, size, i);
+            Heapify(size, i);
             if (algorithm == 7 && ready) Delay();
             else return;
         }
         for (int i = size - 1; i >= 0; i--)
         {
             (array[i], array[0]) = (array[0], array[i]);
-            Heapify(array, i, 0);
+            Heapify(i, 0);
             if (algorithm == 7 && ready) Delay();
             else return;
         }
-        
+
     }
     static void StoogeSort(int left, int right)
     {
         if (algorithm == 8 && ready) Delay();
         else return;
         if (array[left] > array[right]) (array[left], array[right]) = (array[right], array[left]);
+        comparisons++;
         if (right - left > 1)
         {
             int t = (int)((right - left + 1) / 3);
@@ -425,6 +495,7 @@ internal class Program
                 (array[lo], array[hi]) = (array[hi], array[lo]);
                 numSwaps++;
             }
+            comparisons++;
             lo++;
             hi--;
         }
@@ -433,51 +504,100 @@ internal class Program
             (array[lo], array[hi + 1]) = (array[hi + 1], array[lo]);
             numSwaps++;
         }
+        comparisons++;
         numSwaps = CircleSortR(low, low + mid, numSwaps);
         numSwaps = CircleSortR(low + mid + 1, high, numSwaps);
         return numSwaps;
+    }
+    static void ShellSort()
+    {
+        for (int interval = array.Length / 2; interval > 0; interval /= 2)
+        {
+            for (int i = interval; i < array.Length; i++)
+            {
+                var currentKey = array[i];
+                var k = i;
+                comparisons++;
+                while (k >= interval && array[k - interval] > currentKey)
+                {
+                    array[k] = array[k - interval];
+                    k -= interval;
+                    comparisons++;
+                    if (algorithm == 11 && ready) Delay();
+                    else return;
+                }
+                array[k] = currentKey;
+                if (algorithm == 11 && ready) Delay();
+                else return;
+            }
+        }
+    }
+    static void GnomeSort()
+    {
+        int pos = 0;
+        while (pos < array.Length)
+        {
+            comparisons++;
+            if (pos == 0 || array[pos] >= array[pos - 1])
+                pos++;
+            else
+            {
+                (array[pos], array[pos - 1]) = (array[pos - 1], array[pos]);
+                pos--;
+            }
+            if (algorithm == 10 && ready) Delay();
+            else return;
+        }
+    }
+    static void CombSort()
+    {
+        int gap = array.Length;
+        float shrinkFactor = 1.3f;
+        bool swapped = false;
+        while (gap > 1 || swapped)
+        {
+            if (gap > 1)
+            {
+                gap = (int)(gap / shrinkFactor);
+            }
+            swapped = false;
+            for (int i = 0; gap + i < array.Length; i++)
+            {
+                if (array[i] > array[i + gap])
+                {
+                    (array[i], array[i + gap]) = (array[i + gap], array[i]);
+                    swapped = true;
+                }
+                comparisons++;
+                if (algorithm == 12 && ready) Delay();
+                else return;
+            }
+            if (algorithm == 12 && ready) Delay();
+            else return;
+        }
+    }
+    static void BogoSort()
+    {
+
+    }
+    static void StalinSort()
+    {
+        
+    }
+    static void CommunismSort()
+    {
+        
     }
     static void Delay()
     {
         int c = 0;
         while (c < delay) c++;
+        iterations++;
     }
     static void Draw()
     {
-        byte[] last = (byte[])array.Clone();
-        // int lastCurrent = current;
-        // string bar = " ";
-        // string halfBar = " ";
-        // string eraser = "  ";
-        // string empty = " ";
-        // for (int i = 0; i < barWidth; i++)
-        // {
-        //     bar += "\u2588";
-        //     halfBar += "\u2584";
-        //     empty += " ";
-        //     eraser += "  ";
-        // }
-        // eraser += "\n";
-        // string frame = "";
-        // for (int i = height - 1; i >= 0; i--)
-        // {
-        //     for (int j = 0; j < last.Length; j++)
-        //     {
-        //         // if (j == lastCurrent)
-        //         //     Console.ForegroundColor = ConsoleColor.Red;
-        //         // else if (j < last.Length - 1 && j == lastCurrent + 1)
-        //         //     Console.ForegroundColor = ConsoleColor.Green;
-        //         // if (last[j] - i <= 0.5 && last[j] - i > 0)
-        //         //     frame += " \u2584";
-        //         if (last[j] > i)
-        //             frame += " \u2588";
-        //         else
-        //             frame += "  ";
-        //     }
-        //     frame += "\n";
-        // }
-        // Console.Write(frame);
-        var frame = new StringBuilder(height * last.Length * 2); // pre-size estimate
+        int[] last = (int[])array.Raw.Clone();
+        var frame = new StringBuilder(height * last.Length * 2);
         for (int i = height - 1; i >= 0; i--)
         {
             for (int j = 0; j < last.Length; j++)
@@ -485,5 +605,50 @@ internal class Program
             frame.Append('\n');
         }
         Console.Write(frame.ToString());
+        if (PerformanceMonitor.CpuUsage > 25) Thread.Sleep(15);
+    }
+    internal class TrackedArray<T>(int length)
+    {
+        private T[] _data = new T[length];
+        public int Length => _data.Length;
+        public T[] Raw => _data;
+        public T this[int index]
+        {
+            get { arrayAccesses++; return _data[index]; }
+            set { arrayAccesses++; _data[index] = value; }
+        }
+        public void Resize(int targetLength) => Array.Resize(ref _data, targetLength);
+    }
+    internal class TrackedTempArray<T>
+    {
+        public TrackedTempArray(int length)
+        {
+            _data = new T[length];
+        }
+        public TrackedTempArray(T[] input)
+        {
+            _data = input;
+        }
+        private T[] _data;
+        public int Length => _data.Length;
+        public T[] Raw => _data;
+        public T this[int index]
+        {
+            get { tempArrayAccesses++; return _data[index]; }
+            set { tempArrayAccesses++; _data[index] = value; }
+        }
+    }
+    internal static class PerformanceMonitor
+    {
+        private static PerformanceCounter _cpuUsage = new("Processor", "% Processor Time", "_Total");
+        private static PerformanceCounter _ramUsage = new("Memory", "Available MBytes");
+        public static void Init()
+        {
+            float val;
+            val = _cpuUsage.NextValue();
+            val = _ramUsage.NextValue();
+        }
+        public static float CpuUsage => _cpuUsage.NextValue();
+        public static float RamUsage => _ramUsage.NextValue();
     }
 }
