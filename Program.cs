@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
 using System.Diagnostics;
+using System.Linq;
 internal class Program
 {
     static int height = 10;
@@ -35,16 +36,16 @@ internal class Program
     static bool freeze = false;
     static bool ready = false;
     static string message = "";
-    static long arrayAccesses = 0;
-    static long tempArrayAccesses = 0;
+    static ulong arrayAccesses = 0;
+    static ulong tempArrayAccesses = 0;
     static bool countTempArrayAccesses = false;
-    static long comparisons = 0;
-    static long tempArrayComparisons = 0;
+    static ulong comparisons = 0;
+    static ulong tempArrayComparisons = 0;
     static bool countTempArrayComparisons = false;
     static long iterations = 0;
     static readonly Stopwatch time = new();
-    static long Elapsed => (long)time.Elapsed.TotalMilliseconds;
-    static long ElapsedAdjusted => (long)(iterations * delay / 400000) + (Elapsed - (long)(iterations * previousDelay / 400000));
+    static ulong Elapsed => (ulong)time.Elapsed.TotalMilliseconds;
+    static ulong ElapsedAdjusted => (ulong)(iterations * delay / 400000) + (Elapsed - (ulong)(iterations * previousDelay / 400000));
     static int previousDelay = 0;
     static async Task Main()
     {
@@ -577,27 +578,54 @@ internal class Program
     }
     static void BogoSort()
     {
-        Random shuffler = new();
-        TrackedTempArray<int> sortedArr = new(array.Raw);
+        TrackedTempArray<int> sortedArr = new(array.Length);
+        for (int i = 0; i < array.Length; i++) sortedArr[i] = array[i];
         Array.Sort(sortedArr.Raw);
-        while (array.Raw == sortedArr.Raw)
+        while (!array.Raw.SequenceEqual(sortedArr.Raw))
         {
-            shuffler.Shuffle<int>(array.Raw);
+            Shuffle();
+            if (algorithm == 13 && ready) Delay();
+            else return;
         }
     }
     static void StalinSort()
     {
-        
+        int lastLargest = array[0];
+        for (int i = 0; i < array.Length; i++)
+        {
+            if (array[i] < lastLargest) array[i] = 0;
+            else lastLargest = array[i];
+            if (algorithm == 14 && ready) Delay();
+            else return;
+        }
     }
     static void CommunismSort()
     {
-        
+        int mean = (int)(array.Raw.Sum() / array.Length);
+        for (int i = 0; i < array.Length; i++)
+        {
+            array[i] = mean;
+            if (algorithm == 15 && ready) Delay();
+            else return;
+        }
+    }
+    static void Shuffle()
+    {
+        Random rng = new();
+        int n = array.Length;
+
+        for (int i = n - 1; i > 0; i--)
+        {
+            int j = rng.Next(0, i + 1);
+            (array[j], array[i]) = (array[i], array[j]);
+        }
     }
     static void Delay()
     {
         int c = 0;
         while (c < delay) c++;
         iterations++;
+        while (freeze) Thread.Sleep(100);
     }
     static void Draw()
     {
