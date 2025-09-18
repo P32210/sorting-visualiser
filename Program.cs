@@ -31,7 +31,7 @@ internal class Program
     static int window = 0;
     static int window2 = 0;
     static readonly int start = Console.CursorTop;
-    static int delay = 400000;
+    static ulong delay = 400000;
     static bool sorted = true;
     static bool freeze = false;
     static bool ready = false;
@@ -42,11 +42,11 @@ internal class Program
     static ulong comparisons = 0;
     static ulong tempArrayComparisons = 0;
     static bool countTempArrayComparisons = false;
-    static long iterations = 0;
+    static ulong iterations = 0;
     static readonly Stopwatch time = new();
     static ulong Elapsed => (ulong)time.Elapsed.TotalMilliseconds;
     static ulong ElapsedAdjusted => (ulong)(iterations * delay / 400000) + (Elapsed - (ulong)(iterations * previousDelay / 400000));
-    static int previousDelay = 0;
+    static ulong previousDelay = 0;
     static async Task Main()
     {
         PerformanceMonitor.Init();
@@ -164,11 +164,11 @@ internal class Program
                                     else message = "Invalid input";
                                     break;
                                 case ConsoleKey.OemPlus:
-                                    if (int.TryParse(input, out delay)) message = "";
+                                    if (ulong.TryParse(input, out delay)) message = "";
                                     else message = "Invalid input";
                                     break;
                                 case ConsoleKey.OemMinus:
-                                    if (int.TryParse(input, out delay)) message = "";
+                                    if (ulong.TryParse(input, out delay)) message = "";
                                     else message = "Invalid input";
                                     break;
                                 case ConsoleKey.Backspace:
@@ -583,6 +583,7 @@ internal class Program
         Array.Sort(sortedArr.Raw);
         while (!array.Raw.SequenceEqual(sortedArr.Raw))
         {
+            comparisons++;
             Shuffle();
             if (algorithm == 13 && ready) Delay();
             else return;
@@ -593,6 +594,7 @@ internal class Program
         int lastLargest = array[0];
         for (int i = 0; i < array.Length; i++)
         {
+            comparisons++;
             if (array[i] < lastLargest) array[i] = 0;
             else lastLargest = array[i];
             if (algorithm == 14 && ready) Delay();
@@ -622,10 +624,15 @@ internal class Program
     }
     static void Delay()
     {
-        int c = 0;
+        ulong c = 0;
         while (c < delay) c++;
         iterations++;
-        while (freeze) Thread.Sleep(100);
+        if (freeze)
+        {
+            time.Stop();
+            while (freeze) Thread.Sleep(100);
+            time.Start();
+        }
     }
     static void Draw()
     {
