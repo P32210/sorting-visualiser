@@ -690,21 +690,30 @@ internal class Program
     }
     static void SleepSort()
     {
-        int ind = 0;
+        TrackedTempObservableList<int> temp = new(array.Raw);
+        bool set = false;
         void Add(int x)
         {
+            while (set) ;
             Thread.Sleep(x * 50);
-            array[ind++] = x;
+            temp.Add(x);
         }
         List<Thread> threads = [];
         int index;
         for (int i = 0; i < array.Length; i++)
         {
+            iterations++;
             index = i;
             threads.Add(new Thread(() => Add(array[index])));
             threads[i].Start();
-            int j = 0;
-            while (j < 10000) j++;
+        }
+        set = true;
+        bool done = false;
+        int nDone = 0;
+        while (!done)
+        {
+            for (int i = 0; i < threads.Count; i++) if (threads[i].ThreadState == System.Threading.ThreadState.Stopped) nDone++;
+            if (nDone >= threads.Count) done = true;
         }
     }
     static void SlowSort(int i, int j)
@@ -804,6 +813,24 @@ internal class Program
         {
             get { tempArrayAccesses++; return _data[index]; }
             set { tempArrayAccesses++; _data[index] = value; }
+        }
+    }
+    class TrackedTempObservableList<T>(T[] input)
+    {
+        private List<T> _data = [];
+        private T[] boundArray = input;
+        public int Count => _data.Count;
+        public List<T> Raw => _data;
+        public T this[int index]
+        {
+            get { tempArrayAccesses++; return _data[index]; }
+            set { tempArrayAccesses++; _data[index] = value; }
+        }
+        public void Add(T value)
+        {
+            _data.Add(value);
+            int end = _data.Count - 1;
+            boundArray[end] = _data[end];
         }
     }
     internal static class PerformanceMonitor
