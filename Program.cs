@@ -14,6 +14,7 @@ internal class Program
         "Bubble sort",
         "Quick sort",
         "Cocktail shaker",
+        "Brick Sort",
         "Radix sort LSD",
         "Radix sort MSD",
         "Insertion sort",
@@ -26,6 +27,10 @@ internal class Program
         "Shell sort",
         "Comb sort",
         "Bitonic sort",
+        "Batcher's odd even sort",
+        "Block sort",
+        "Binary insertion sort",
+        "Tree sort",
         "Bogo sort",
         "Stalin sort",
         "Communism sort",
@@ -51,7 +56,7 @@ internal class Program
     static ulong iterations = 0;
     static readonly Stopwatch time = new();
     static ulong Elapsed => (ulong)time.Elapsed.TotalMilliseconds;
-    static ulong ElapsedAdjusted => (ulong)(iterations * delay / 400000) + (Elapsed - (ulong)(iterations * previousDelay / 400000));
+    static ulong ElapsedAdjusted => (ulong)(iterations * delay / 400000) + Math.Max(Elapsed - (ulong)(iterations * previousDelay / 400000), 0);
     static ulong previousDelay = 0;
     static async Task Main()
     {
@@ -231,24 +236,29 @@ internal class Program
                     case 0: BubbleSort(); break;
                     case 1: QuickSort(0, array.Length - 1); break;
                     case 2: CocktailShaker(); break;
-                    case 3: RadixSort(); break;
+                    case 3: BrickSort(array.Length); break;
                     case 4: RadixSort(); break;
-                    case 5: InsertionSort(); break;
-                    case 6: SelectionSort(); break;
-                    case 7: MergeSort(0, array.Length - 1); break;
-                    case 8: HeapSort(); break;
-                    case 9: StoogeSort(0, array.Length - 1); break;
-                    case 10: CircleSort(); break;
-                    case 11: GnomeSort(); break;
-                    case 12: ShellSort(); break;
-                    case 13: CombSort(); break;
-                    case 14: BitonicSort(0, array.Length, 1); break;
-                    case 15: BogoSort(); break;
-                    case 16: StalinSort(); break;
-                    case 17: CommunismSort(); break;
-                    case 18: SleepSort(); break;
-                    case 19: SlowSort(0, array.Length - 1); break;
-                    case 20: BozoSort(); break;
+                    case 5: RadixSortMSD(); break;
+                    case 6: InsertionSort(); break;
+                    case 7: SelectionSort(); break;
+                    case 8: MergeSort(0, array.Length - 1); break;
+                    case 9: HeapSort(); break;
+                    case 10: StoogeSort(0, array.Length - 1); break;
+                    case 11: CircleSort(); break;
+                    case 12: GnomeSort(); break;
+                    case 13: ShellSort(); break;
+                    case 14: CombSort(); break;
+                    case 15: BitonicSort(0, array.Length, 1); break;
+                    case 16: OddEvenMergesort(0, array.Length); break;
+                    case 17: BlockSort(); break;
+                    case 18: BinaryInsertionSort(array.Length); break;
+                    case 19: TreeSort(); break;
+                    case 20: BogoSort(); break;
+                    case 21: StalinSort(); break;
+                    case 22: CommunismSort(); break;
+                    case 23: SleepSort(); break;
+                    case 24: SlowSort(0, array.Length - 1); break;
+                    case 25: BozoSort(); break;
                 }
                 time.Stop();
                 sorted = true;
@@ -330,11 +340,41 @@ internal class Program
             QuickSort(i, rightIndex);
 
     }
+    public static void BrickSort(int n)
+    {
+        bool isSorted = false; 
+        while (!isSorted)
+        {
+            isSorted = true;
+            for (int i = 1; i <= n - 2; i += 2)
+            {
+                comparisons++;
+                if (array[i] > array[i + 1])
+                {
+                    (array[i], array[i + 1]) = (array[i + 1], array[i]);
+                    isSorted = false;
+                    if (algorithm == 3 && ready) Delay();
+                    else return;
+                }
+            }
+            for (int i = 0; i <= n - 2; i += 2)
+            {
+                comparisons++;
+                if (array[i] > array[i + 1])
+                {
+                    (array[i], array[i + 1]) = (array[i + 1], array[i]);
+                    isSorted = false;
+                    if (algorithm == 3 && ready) Delay();
+                    else return;
+                }
+            }
+        }
+    }
     static void RadixSort()
     {
         static void CountingSort(int size, int exponent)
         {
-            if (algorithm == 3 && ready) Delay();
+            if (algorithm == 4 && ready) Delay();
             else return;
             TrackedTempArray<int> outputArr = new((int[])array.Raw.Clone());
             TrackedTempArray<int> occurences = new(10);
@@ -346,7 +386,7 @@ internal class Program
                 occurences[i] += occurences[i - 1];
             for (int i = size - 1; i >= 0; i--)
             {
-                if (algorithm == 3 && ready) Delay();
+                if (algorithm == 4 && ready) Delay();
                 else return;
                 array[occurences[(outputArr[i] / exponent) % 10] - 1] = outputArr[i];
                 occurences[(outputArr[i] / exponent) % 10]--;
@@ -362,6 +402,10 @@ internal class Program
         for (int exponent = 1; max / exponent > 0; exponent *= 10)
             CountingSort(array.Length, exponent);
 
+    }
+    static void RadixSortMSD()
+    {
+        
     }
     static void InsertionSort()
     {
@@ -379,7 +423,7 @@ internal class Program
                 }
                 else flag = 1;
                 comparisons++;
-                if (algorithm == 5 && ready) Delay();
+                if (algorithm == 6 && ready) Delay();
                 else return;
             }
         }
@@ -408,7 +452,7 @@ internal class Program
             else
                 array[k++] = rightTempArray[j++];
             tempArrayComparisons++;
-            if (algorithm == 7 && ready) Delay();
+            if (algorithm == 8 && ready) Delay();
             else return;
         }
         while (i < leftArrayLength)
@@ -422,7 +466,7 @@ internal class Program
     }
         if (left < right)
         {
-            if (algorithm == 7 && ready) Delay();
+            if (algorithm == 8 && ready) Delay();
             else return;
             int middle = left + (right - left) / 2;
             MergeSort(left, middle);
@@ -444,7 +488,7 @@ internal class Program
                     min = j;
                 }
                 comparisons++;
-                if (algorithm == 6 && ready) Delay();
+                if (algorithm == 7 && ready) Delay();
                 else return;
             }
             (array[i], array[min]) = (array[min], array[i]);
@@ -475,21 +519,21 @@ internal class Program
         for (int i = size / 2 - 1; i >= 0; i--)
         {
             Heapify(size, i);
-            if (algorithm == 8 && ready) Delay();
+            if (algorithm == 9 && ready) Delay();
             else return;
         }
         for (int i = size - 1; i >= 0; i--)
         {
             (array[i], array[0]) = (array[0], array[i]);
             Heapify(i, 0);
-            if (algorithm == 8 && ready) Delay();
+            if (algorithm == 9 && ready) Delay();
             else return;
         }
 
     }
     static void StoogeSort(int left, int right)
     {
-        if (algorithm == 9 && ready) Delay();
+        if (algorithm == 10 && ready) Delay();
         else return;
         if (array[left] > array[right]) (array[left], array[right]) = (array[right], array[left]);
         comparisons++;
@@ -505,7 +549,7 @@ internal class Program
     {
         static int CircleSortR(int lo, int hi, int numSwaps)
     {
-        if (algorithm == 10 && ready) Delay();
+        if (algorithm == 11 && ready) Delay();
         else return 0;
         if (lo == hi)
             return numSwaps;
@@ -514,7 +558,7 @@ internal class Program
         var mid = (hi - lo) / 2;
         while (lo < hi)
         {
-            if (algorithm == 10 && ready) Delay();
+            if (algorithm == 11 && ready) Delay();
             else return 0;
             if (array[lo] > array[hi])
             {
@@ -553,11 +597,11 @@ internal class Program
                     array[k] = array[k - interval];
                     k -= interval;
                     comparisons++;
-                    if (algorithm == 12 && ready) Delay();
+                    if (algorithm == 13 && ready) Delay();
                     else return;
                 }
                 array[k] = currentKey;
-                if (algorithm == 12 && ready) Delay();
+                if (algorithm == 13 && ready) Delay();
                 else return;
             }
         }
@@ -575,7 +619,7 @@ internal class Program
                 (array[pos], array[pos - 1]) = (array[pos - 1], array[pos]);
                 pos--;
             }
-            if (algorithm == 11 && ready) Delay();
+            if (algorithm == 12 && ready) Delay();
             else return;
         }
     }
@@ -599,10 +643,10 @@ internal class Program
                     swapped = true;
                 }
                 comparisons++;
-                if (algorithm == 13 && ready) Delay();
+                if (algorithm == 14 && ready) Delay();
                 else return;
             }
-            if (algorithm == 13 && ready) Delay();
+            if (algorithm == 14 && ready) Delay();
             else return;
         }
     }
@@ -618,7 +662,7 @@ internal class Program
                 k = 0;
             if (dir == k)
                 (array[i], array[j]) = (array[j], array[i]);
-            if (algorithm == 14 && ready) Delay();
+            if (algorithm == 15 && ready) Delay();
             else return;
         }
         static void BitonicMerge(int low, int cnt, int dir)
@@ -631,7 +675,7 @@ internal class Program
                 BitonicMerge(low, k, dir);
                 BitonicMerge(low + k, k, dir);
             }
-            if (algorithm == 14 && ready) Delay();
+            if (algorithm == 15 && ready) Delay();
             else return;
         } 
         if (cnt > 1)
@@ -642,6 +686,138 @@ internal class Program
             BitonicMerge(low, cnt, dir);
         } 
     }
+    static void OddEvenMergesort(int lo, int n)
+    {
+        static void OddEvenMerge(int lo, int n, int r)
+        {
+            int m = r * 2;
+            if (m < n)
+            {
+                OddEvenMerge(lo, n, m);
+                OddEvenMerge(lo + r, n, m);
+                for (int i = lo + r; i + r < lo + n; i += m)
+                {
+                    Compare(i, i + r);
+                    if (algorithm == 16 && ready) Delay();
+                    else return;
+                }
+            }
+            else
+                Compare(lo, lo + r);
+        }
+        static void Compare(int i, int j)
+        {
+            comparisons++;
+            if (array[i] > array[j])
+                Exchange(i, j);
+        }
+        static void Exchange(int i, int j)
+        {
+            (array[j], array[i]) = (array[i], array[j]);
+        }
+        if (n > 1)
+        {
+            int m = n / 2;
+            OddEvenMergesort(lo, m);
+            OddEvenMergesort(lo + m, m);
+            OddEvenMerge(lo, n, 1);
+            if (algorithm == 16 && ready) Delay();
+            else return;
+        }
+    }
+    static void BlockSort()
+    {
+
+    }
+    static void BinaryInsertionSort(int n)
+    {
+        static int BinarySearch(int item, int low, int high)
+        {
+            while (low <= high)
+            {
+                int mid = low + (high - low) / 2;
+                comparisons += 2;
+                if (item == array[mid])
+                    return mid + 1;
+                else if (item > array[mid])
+                    low = mid + 1;
+                else
+                    high = mid - 1;
+                if (algorithm == 18 && ready) Delay();
+                else return 0;
+
+            }
+            return low;
+        }
+        int i, loc, j, selected;
+        for (i = 1; i < n; ++i)
+        {
+            j = i - 1;
+            selected = array[i];
+            loc = BinarySearch(selected, 0, j);
+            while (j >= loc)
+            {
+                array[j + 1] = array[j];
+                j--;
+                if (algorithm == 18 && ready) Delay();
+                else return;
+            }
+            array[j + 1] = selected;
+        }
+    }
+    #region Tree sort
+    class Node
+    {
+        public int key;
+        public Node? left, right;
+        public Node(int item)
+        {
+            key = item;
+            left = right = null;
+        }
+    }
+    static Node? root;
+    static TrackedTempObservableList<int> treeSortTemp = new(array.Raw);
+    static void Insert(int key)
+    {
+        root = InsertRec(root!, key);
+    }
+    static Node InsertRec(Node root, int key)
+    {
+        if (root == null)
+        {
+            root = new Node(key);
+            return root;
+        }
+        if (key < root.key)
+            root.left = InsertRec(root.left!, key);
+        else if (key > root.key)
+            root.right = InsertRec(root.right!, key);
+        comparisons += 2;
+        return root;
+    }
+    static void InorderRec(Node root)
+    {
+        if (root != null)
+        {
+            InorderRec(root.left!);
+            treeSortTemp.Add(root.key);
+            InorderRec(root.right!);
+        }
+        if (algorithm == 19 && ready) Delay();
+        else return;
+    }
+    static void TreeSort()
+    {
+        for (int i = 0; i < array.Length; i++)
+        {
+            Insert(array[i]);
+            if (algorithm == 19 && ready) Delay();
+            else return;
+        }
+        InorderRec(root!);
+    }
+    #endregion
     static void BogoSort()
     {
         static void Shuffle()
@@ -662,7 +838,7 @@ internal class Program
         {
             comparisons++;
             Shuffle();
-            if (algorithm == 15 && ready) Delay();
+            if (algorithm == 20 && ready) Delay();
             else return;
         }
     }
@@ -674,7 +850,7 @@ internal class Program
             comparisons++;
             if (array[i] < lastLargest) array[i] = 0;
             else lastLargest = array[i];
-            if (algorithm == 16 && ready) Delay();
+            if (algorithm == 21 && ready) Delay();
             else return;
         }
     }
@@ -684,7 +860,7 @@ internal class Program
         for (int i = 0; i < array.Length; i++)
         {
             array[i] = mean;
-            if (algorithm == 17 && ready) Delay();
+            if (algorithm == 22 && ready) Delay();
             else return;
         }
     }
@@ -718,7 +894,7 @@ internal class Program
     }
     static void SlowSort(int i, int j)
     {
-        if (algorithm == 19 && ready) Delay();
+        if (algorithm == 24 && ready) Delay();
         else return;
         if (i >= j)
             return;
@@ -744,7 +920,7 @@ internal class Program
             lhs = rng.Next(0, array.Length);
             rhs = rng.Next(0, array.Length);
             (array[lhs], array[rhs]) = (array[rhs], array[lhs]);
-            if (algorithm == 20 && ready) Delay();
+            if (algorithm == 25 && ready) Delay();
             else return;
         }
     }
