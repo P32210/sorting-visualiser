@@ -37,6 +37,7 @@ internal class Program
         "Sleep sort",
         "Slow sort",
         "Bozo sort",
+        "Variation stalin sort",
         ];
     static readonly TrackedArray<int> array = new(width);
     static int window = 0;
@@ -259,6 +260,7 @@ internal class Program
                     case 23: SleepSort(); break;
                     case 24: SlowSort(0, array.Length - 1); break;
                     case 25: BozoSort(); break;
+                    case 26: VariationStalinSort(); break;
                 }
                 time.Stop();
                 sorted = true;
@@ -777,7 +779,7 @@ internal class Program
         }
     }
     static Node? root;
-    static TrackedTempObservableList<int> treeSortTemp = new(array.Raw);
+    static TrackedTempObservableList treeSortTemp = new(array.Raw);
     static void Insert(int key)
     {
         root = InsertRec(root!, key);
@@ -866,7 +868,7 @@ internal class Program
     }
     static void SleepSort()
     {
-        TrackedTempObservableList<int> temp = new(array.Raw);
+        TrackedTempObservableList temp = new(array.Raw, false);
         bool set = false;
         void Add(int x)
         {
@@ -922,6 +924,30 @@ internal class Program
             (array[lhs], array[rhs]) = (array[rhs], array[lhs]);
             if (algorithm == 25 && ready) Delay();
             else return;
+        }
+    }
+    static void VariationStalinSort()
+    {
+        int j = 0;
+        while (true)
+        {
+            int moved = 0;
+            for (int i = 0; i < (array.Length - 1 - j); i++)
+            {
+                comparisons++;
+                if (array[i] > array[i + 1])
+                {
+                    (array[i], array[i + 1]) = (array[i + 1], array[i]);
+                    moved++;
+                }
+                if (algorithm == 26 && ready) Delay();
+                else return;
+            }
+            j++;
+            if (moved == 0)
+            {
+                break;
+            }
         }
     }
     static void ShuffleDelay()
@@ -991,18 +1017,18 @@ internal class Program
             set { tempArrayAccesses++; _data[index] = value; }
         }
     }
-    class TrackedTempObservableList<T>(T[] input)
+    class TrackedTempObservableList(int[] input, bool fillWithBoundArray = true)
     {
-        private List<T> _data = [];
-        private T[] boundArray = input;
+        private List<int> _data = fillWithBoundArray ? [.. input] : [];
+        private int[] boundArray = input;
         public int Count => _data.Count;
-        public List<T> Raw => _data;
-        public T this[int index]
+        public List<int> Raw => _data;
+        public int this[int index]
         {
             get { tempArrayAccesses++; return _data[index]; }
             set { tempArrayAccesses++; _data[index] = value; }
         }
-        public void Add(T value)
+        public void Add(int value)
         {
             _data.Add(value);
             int end = _data.Count - 1;
